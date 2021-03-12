@@ -1,0 +1,84 @@
+_schema-version: "3.2"
+ID: FioriLivros
+version: 0.0.1
+modules:
+- name: FioriLivros-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: FioriLivros-destination-service
+    parameters:
+      content-target: true
+  - name: FioriLivros_html_repo_host
+    parameters:
+      service-key:
+        name: FioriLivros_html_repo_host-key
+  - name: uaa_FioriLivros
+    parameters:
+      service-key:
+        name: uaa_FioriLivros-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: bs1_FioriLivros_html_repo_host
+          ServiceInstanceName: FioriLivros-html5-app-host-service
+          ServiceKeyName: FioriLivros_html_repo_host-key
+          sap.cloud.service: bs1
+        - Authentication: OAuth2UserTokenExchange
+          Name: bs1_uaa_FioriLivros
+          ServiceInstanceName: FioriLivros-xsuaa-service
+          ServiceKeyName: uaa_FioriLivros-key
+          sap.cloud.service: bs1
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: FioriLivros_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: FioriLivros_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - FioriLivrosHTML5Module-content.zip
+      name: FioriLivrosHTML5Module
+      target-path: resources/
+- name: FioriLivrosHTML5Module
+  type: html5
+  path: FioriLivrosHTML5Module
+  build-parameters:
+    builder: custom
+    commands:
+    - npm run build
+    supported-platforms: []
+resources:
+- name: FioriLivros-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: FioriLivros-destination-service
+    service-plan: lite
+- name: FioriLivros_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: FioriLivros-html5-app-host-service
+    service-plan: app-host
+- name: uaa_FioriLivros
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: FioriLivros-xsuaa-service
+    service-plan: application
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm install
